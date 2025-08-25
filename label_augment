@@ -1,0 +1,25 @@
+function [G] = label_augment(X,Y,L,param)
+[c,n]= size(L);
+       X = NormalizeFea(X,0);
+       Y = NormalizeFea(Y,0);
+       T = NormalizeFea(L,0);
+
+alpha = param.alpha+(sqrt(param.cbits/16-1)*0.10);
+ F=L;
+ F(F==0)=-0.5;  
+ M = randn(size(L,1),n);
+   for i= 1 : 6
+       %update Q_t 
+       [V_1,~,U_1] = svd((M.*F)*X','econ');
+       Q_1 = V_1*U_1';
+       [V_2,~,U_2] = svd((M.*F)*Y','econ');
+       Q_2 = V_2*U_2';
+       [V_3,~,U_3] = svd((M.*F)*T','econ');
+       Q_3 = V_3*U_3';
+       M = ((1-alpha)/2*Q_1*X+(1-alpha)/2*Q_2*Y+alpha*Q_3*T).*F;
+       R = -M(M<0);
+       M(M<0)=R;
+       M = NormalizeFea(M,0);
+   end
+   G = NormalizeFea(F.*M,0);
+end
