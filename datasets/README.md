@@ -1,1 +1,2 @@
-
+The datasets of IAPR-TC, MIR-Flickr, NUS-WIDE and MS-COCO are available on Website: https://pan.baidu.com/s/1TMjHcafYoYDZ5TySQ03ggA?pwd=AABB Password: AABB.
+Including shallow features, VGG features and CLIP features.
