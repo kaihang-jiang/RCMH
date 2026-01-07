@@ -1,11 +1,12 @@
 function [B] =Regenerate(XKTrain,YKTrain,LTrain,U,param)
     cbits = param.cbits;
-    pace = 0.005; %0.005 for IAPRTC NUSWIDE and MSCOCO, 0.05 for MIRFLICRK 
-    muta = 10;
+    nbits = param.nbits;
+    pace = param.pace; %0.005 for IAPRTC NUSWIDE and MSCOCO, 0.05 for MIRFLICRK 
+    mu = param.mu;
     [d1,n] = size(XKTrain);
     d2 = size(YKTrain,1);
     H_2 = randn(cbits,d2);
-    tic;
+    %% label augmentation
     [E] = label_enhance(XKTrain, YKTrain, LTrain, param);  
     D = diag(randn(d1,1));
     if nbits>=cbits
@@ -14,9 +15,8 @@ function [B] =Regenerate(XKTrain,YKTrain,LTrain,U,param)
         B1 = sign(randn(cbits-nbits,n));
         B = [U;B1];
     end
-%% initial
-  
-
+    
+%% initial B
     for j = 1:4
         V = (cbits*B*E'*E)';
         Temp = V'*V-1/n*(V'*ones(n,1)*(ones(1,n)*V));
@@ -31,16 +31,17 @@ function [B] =Regenerate(XKTrain,YKTrain,LTrain,U,param)
         [U1,~,V1] = svd(U*B','econ');
         Q = U1*V1';
 
-        B = sign(cbits*V*E'*E+muta*Q'*U);
+        B = sign(cbits*V*E'*E+mu*Q'*U);
     end 
 
-     %% 
+     %% SVD
      [~,~,Y] = svd([XKTrain],'econ');
-     % update W_t
+     
+     %% update W_t
      [C_1,~,F_1] = svd(D*Y'*V','econ'); 
      W_1 = C_1*F_1';
 
-     %update E_t
+     %% update D_t
         J_1 = Y'; 
         K_1 =W_1 *V;
         for j = 1:d1
@@ -50,12 +51,12 @@ function [B] =Regenerate(XKTrain,YKTrain,LTrain,U,param)
             e_1(j) = J_1(j,:)*K_1(j,:)';
             end
         end
-
         a = mean(e_1);
         e_1(e_1>=a) = 1;
         e_1(e_1<a) = -1;    
         D =diag(e_1);
-        
+     
+    %% Linear-nonlinear competitive reconstruction 
      for iter = 1:5
         deriva_2  = -((V-tanh(H_2*YKTrain))).*(ones(cbits, n)-tanh(H_2*YKTrain).*tanh(H_2*YKTrain))*YKTrain';
         H_2 = H_2- pace*deriva_2;
@@ -69,11 +70,16 @@ function [B] =Regenerate(XKTrain,YKTrain,LTrain,U,param)
      R1(Ds1>Ds2)=1;
      R1(Ds1<=Ds2)=0;
      R2 = ones(n,1)-R1;
-     V_m = (Bx.*R1'+By.*R2');  
+     R_1 = repmat(R1, 1, cbits);
+     R_2 = repmat(R2, 1, cbits);
+     V_m = (Bx.*R_1'+By.*R_2'); 
+     
+     %% update  Q
      [U1,~,V1] = svd(U*B','econ');
      Q = U1*V1';
      
-     B = sign((V_m*V_m'+(muta)*eye(cbits))\(cbits*((V_m)*E')*E+ muta*Q'* U));
+     %% update final B
+     B = sign((V_m*V_m'+(mu)*eye(cbits))\(cbits*((V_m)*E')*E+ mu*Q'* U));
      B(B==0)=-1;
 
 end
