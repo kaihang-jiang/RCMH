@@ -7,7 +7,7 @@ function [B] =Regenerate(XKTrain,YKTrain,LTrain,U,param)
     d2 = size(YKTrain,1);
     H_2 = randn(cbits,d2);
     %% label augmentation
-    [E] = label_enhance(XKTrain, YKTrain, LTrain, param);  
+    [E] = label_augment(XKTrain, YKTrain, LTrain, param);  
     D = diag(randn(d1,1));
     if nbits>=cbits
         B = U(1:cbits,:);
